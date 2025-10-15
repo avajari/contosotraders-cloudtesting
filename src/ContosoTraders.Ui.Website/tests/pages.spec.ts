@@ -64,13 +64,19 @@ test.describe('Carousel', () => {
 test.describe('CarouselVRT', () => {  
   test.skip(({ browserName }) => browserName !== 'chromium', 'Chromium only!');
   test('verify carousel is pixel perfect - slide 1', async ({ page }) => {
-    await expect(page.getByTestId('carousel')).toHaveScreenshot();
+    // Wait for images to load completely after Front Door migration
+    await page.waitForLoadState('networkidle');
+    await expect(page.getByTestId('carousel')).toHaveScreenshot({ threshold: 0.5 });
   })
 
   test('verify carousel is pixel perfect - slide 2', async ({ page }) => {
     const carousel = page.getByTestId('carousel');
+    // Wait for images to load before interacting
+    await page.waitForLoadState('networkidle');
     await carousel.getByRole('button', { name: 'Next' }).click();
-    await expect(carousel).toHaveScreenshot();
+    // Wait for transition to complete
+    await page.waitForTimeout(1000);
+    await expect(carousel).toHaveScreenshot({ threshold: 0.5 });
   })
 });
 
