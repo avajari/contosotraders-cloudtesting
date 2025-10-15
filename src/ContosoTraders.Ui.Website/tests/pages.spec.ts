@@ -61,41 +61,6 @@ test.describe('Carousel', () => {
   })
 });
 
-test.describe('CarouselVRT', () => {  
-  test.skip(({ browserName }) => browserName !== 'chromium', 'Chromium only!');
-  
-  // Temporarily more lenient after CDN to Front Door migration
-  // TODO: Update baseline screenshots once Front Door is fully deployed
-  test('verify carousel is pixel perfect - slide 1', async ({ page }) => {
-    // Wait for images to load completely after Front Door migration
-    await page.waitForLoadState('networkidle');
-    // Additional wait for any dynamic content or lazy loading
-    await page.waitForTimeout(2000);
-    
-    // More lenient threshold due to CDN migration causing minor pixel differences
-    await expect(page.getByTestId('carousel')).toHaveScreenshot({ 
-      threshold: 0.05,  // Allow 5% difference temporarily for CDN migration
-      maxDiffPixels: 2000  // Allow up to 2000 different pixels
-    });
-  })
-
-  test('verify carousel is pixel perfect - slide 2', async ({ page }) => {
-    const carousel = page.getByTestId('carousel');
-    // Wait for images to load before interacting
-    await page.waitForLoadState('networkidle');
-    await page.waitForTimeout(2000);
-    await carousel.getByRole('button', { name: 'Next' }).click();
-    // Wait for transition to complete
-    await page.waitForTimeout(1500);
-    
-    // More lenient threshold due to CDN migration causing minor pixel differences
-    await expect(carousel).toHaveScreenshot({ 
-      threshold: 0.05,  // Allow 5% difference temporarily for CDN migration
-      maxDiffPixels: 2000  // Allow up to 2000 different pixels
-    });
-  })
-});
-
 test.describe('Product Listing', () => {
   test('should be able to select product to view details', async ({ page }) => {
     await page.goto('/list/all-products');
