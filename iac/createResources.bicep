@@ -46,7 +46,7 @@ var kvSecretNameCartsInternalApiEndpoint = 'cartsInternalApiEndpoint'
 var kvSecretNameCartsDbConnStr = 'cartsDbConnectionString'
 var kvSecretNameImagesEndpoint = 'imagesEndpoint'
 var kvSecretNameAppInsightsConnStr = 'appInsightsConnectionString'
-var kvSecretNameUiCdnEndpoint = 'uiCdnEndpoint'
+var kvSecretNameUiFrontDoorEndpoint = 'uiFrontDoorEndpoint'
 var kvSecretNameVnetAcaSubnetId = 'vnetAcaSubnetId'
 
 // user-assigned managed identity (for key vault access)
@@ -111,11 +111,20 @@ var ui2StgAccName = '${prefix}ui2${suffix}'
 var imageClassifierStgAccName = '${prefix}ic${suffix}'
 var imageClassifierWebsiteUploadsContainerName = 'website-uploads'
 
-// cdn
-var cdnProfileName = '${prefixHyphenated}-cdn${suffix}'
-var cdnImagesEndpointName = '${prefixHyphenated}-images${suffix}'
-var cdnUiEndpointName = '${prefixHyphenated}-ui${suffix}'
-var cdnUi2EndpointName = '${prefixHyphenated}-ui2${suffix}'
+// front door
+var frontDoorProfileName = '${prefixHyphenated}-afd${suffix}'
+var frontDoorImagesEndpointName = '${prefixHyphenated}-images${suffix}'
+var frontDoorUiEndpointName = '${prefixHyphenated}-ui${suffix}'
+var frontDoorUi2EndpointName = '${prefixHyphenated}-ui2${suffix}'
+var frontDoorImagesOriginGroupName = 'ImagesOriginGroup'
+var frontDoorUiOriginGroupName = 'UiOriginGroup'
+var frontDoorUi2OriginGroupName = 'Ui2OriginGroup'
+var frontDoorImagesOriginName = 'ImagesOrigin'
+var frontDoorUiOriginName = 'UiOrigin'
+var frontDoorUi2OriginName = 'Ui2Origin'
+var frontDoorImagesRouteName = 'ImagesRoute'
+var frontDoorUiRouteName = 'UiRoute'
+var frontDoorUi2RouteName = 'Ui2Route'
 
 // azure container registry
 var acrName = '${prefix}acr${suffix}'
@@ -284,8 +293,8 @@ resource kv 'Microsoft.KeyVault/vaults@2022-07-01' = {
     name: kvSecretNameImagesEndpoint
     tags: resourceTags
     properties: {
-      contentType: 'endpoint url of the images cdn'
-      value: 'https://${cdnprofile_imagesendpoint.properties.hostName}'
+      contentType: 'endpoint url of the images front door'
+      value: 'https://${frontDoorImagesEndpoint.properties.hostName}'
     }
   }
 
@@ -300,12 +309,12 @@ resource kv 'Microsoft.KeyVault/vaults@2022-07-01' = {
   }
 
   // secret
-  resource kv_secretUiCdnEndpoint 'secrets' = {
-    name: kvSecretNameUiCdnEndpoint
+  resource kv_secretUiFrontDoorEndpoint 'secrets' = {
+    name: kvSecretNameUiFrontDoorEndpoint
     tags: resourceTags
     properties: {
-      contentType: 'endpoint url (cdn endpoint) of the ui'
-      value: cdnprofile_ui2endpoint.properties.hostName
+      contentType: 'endpoint url (front door endpoint) of the ui'
+      value: frontDoorUi2Endpoint.properties.hostName
     }
   }
 
@@ -933,260 +942,211 @@ resource imageclassifierstgacc 'Microsoft.Storage/storageAccounts@2023-01-01' = 
 }
 
 //
-// cdn
+// front door
 //
 
-resource cdnprofile 'Microsoft.Cdn/profiles@2022-11-01-preview' = {
-  name: cdnProfileName
+resource frontDoorProfile 'Microsoft.Cdn/profiles@2021-06-01' = {
+  name: frontDoorProfileName
   location: 'global'
-  tags: resourceTags
   sku: {
-    name: 'Standard_Microsoft'
+    name: 'Standard_AzureFrontDoor'
+  }
+  tags: resourceTags
+}
+
+// Front Door endpoints
+resource frontDoorImagesEndpoint 'Microsoft.Cdn/profiles/afdEndpoints@2021-06-01' = {
+  name: frontDoorImagesEndpointName
+  parent: frontDoorProfile
+  location: 'global'
+  properties: {
+    enabledState: 'Enabled'
   }
 }
 
-// endpoint (product images)
-resource cdnprofile_imagesendpoint 'Microsoft.Cdn/profiles/endpoints@2022-11-01-preview' = {
-  name: cdnImagesEndpointName
+resource frontDoorUiEndpoint 'Microsoft.Cdn/profiles/afdEndpoints@2021-06-01' = {
+  name: frontDoorUiEndpointName
+  parent: frontDoorProfile
   location: 'global'
-  tags: resourceTags
-  parent: cdnprofile
   properties: {
-    isCompressionEnabled: true
-    contentTypesToCompress: [
-      'image/svg+xml'
-    ]
-    deliveryPolicy: {
-      rules: [
-        {
-          name: 'Global'
-          order: 0
-          actions: [
-            {
-              name: 'CacheExpiration'
-              parameters: {
-                typeName: 'DeliveryRuleCacheExpirationActionParameters'
-                cacheBehavior: 'SetIfMissing'
-                cacheType: 'All'
-                cacheDuration: '10:00:00'
-              }
-            }
-          ]
-        }
-      ]
+    enabledState: 'Enabled'
+  }
+}
+
+resource frontDoorUi2Endpoint 'Microsoft.Cdn/profiles/afdEndpoints@2021-06-01' = {
+  name: frontDoorUi2EndpointName
+  parent: frontDoorProfile
+  location: 'global'
+  properties: {
+    enabledState: 'Enabled'
+  }
+}
+
+// Front Door origin groups
+resource frontDoorImagesOriginGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' = {
+  name: frontDoorImagesOriginGroupName
+  parent: frontDoorProfile
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+      additionalLatencyInMilliseconds: 50
     }
+    healthProbeSettings: {
+      probePath: '/'
+      probeRequestType: 'HEAD'
+      probeProtocol: 'Http'
+      probeIntervalInSeconds: 100
+    }
+  }
+}
+
+resource frontDoorUiOriginGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' = {
+  name: frontDoorUiOriginGroupName
+  parent: frontDoorProfile
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+      additionalLatencyInMilliseconds: 50
+    }
+    healthProbeSettings: {
+      probePath: '/'
+      probeRequestType: 'HEAD'
+      probeProtocol: 'Http'
+      probeIntervalInSeconds: 100
+    }
+  }
+}
+
+resource frontDoorUi2OriginGroup 'Microsoft.Cdn/profiles/originGroups@2021-06-01' = {
+  name: frontDoorUi2OriginGroupName
+  parent: frontDoorProfile
+  properties: {
+    loadBalancingSettings: {
+      sampleSize: 4
+      successfulSamplesRequired: 3
+      additionalLatencyInMilliseconds: 50
+    }
+    healthProbeSettings: {
+      probePath: '/'
+      probeRequestType: 'HEAD'
+      probeProtocol: 'Http'
+      probeIntervalInSeconds: 100
+    }
+  }
+}
+
+// Front Door origins
+resource frontDoorImagesOrigin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
+  name: frontDoorImagesOriginName
+  parent: frontDoorImagesOriginGroup
+  properties: {
+    hostName: replace(replace(productimagesstgacc.properties.primaryEndpoints.blob, 'https://', ''), '/', '')
+    httpPort: 80
+    httpsPort: 443
     originHostHeader: replace(replace(productimagesstgacc.properties.primaryEndpoints.blob, 'https://', ''), '/', '')
-    origins: [
-      {
-        name: replace(
-          replace(replace(productimagesstgacc.properties.primaryEndpoints.blob, 'https://', ''), '/', ''),
-          '.',
-          '-'
-        )
-        properties: {
-          hostName: replace(replace(productimagesstgacc.properties.primaryEndpoints.blob, 'https://', ''), '/', '')
-          originHostHeader: replace(
-            replace(productimagesstgacc.properties.primaryEndpoints.blob, 'https://', ''),
-            '/',
-            ''
-          )
-        }
-      }
-    ]
+    priority: 1
+    weight: 1000
+    enabledState: 'Enabled'
   }
 }
 
-// endpoint (ui / old website)
-resource cdnprofile_uiendpoint 'Microsoft.Cdn/profiles/endpoints@2022-11-01-preview' = {
-  name: cdnUiEndpointName
-  location: 'global'
-  tags: resourceTags
-  parent: cdnprofile
+resource frontDoorUiOrigin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
+  name: frontDoorUiOriginName
+  parent: frontDoorUiOriginGroup
   properties: {
-    isCompressionEnabled: true
-    contentTypesToCompress: [
-      'application/eot'
-      'application/font'
-      'application/font-sfnt'
-      'application/javascript'
-      'application/json'
-      'application/opentype'
-      'application/otf'
-      'application/pkcs7-mime'
-      'application/truetype'
-      'application/ttf'
-      'application/vnd.ms-fontobject'
-      'application/xhtml+xml'
-      'application/xml'
-      'application/xml+rss'
-      'application/x-font-opentype'
-      'application/x-font-truetype'
-      'application/x-font-ttf'
-      'application/x-httpd-cgi'
-      'application/x-javascript'
-      'application/x-mpegurl'
-      'application/x-opentype'
-      'application/x-otf'
-      'application/x-perl'
-      'application/x-ttf'
-      'font/eot'
-      'font/ttf'
-      'font/otf'
-      'font/opentype'
-      'image/svg+xml'
-      'text/css'
-      'text/csv'
-      'text/html'
-      'text/javascript'
-      'text/js'
-      'text/plain'
-      'text/richtext'
-      'text/tab-separated-values'
-      'text/xml'
-      'text/x-script'
-      'text/x-component'
-      'text/x-java-source'
-    ]
-    deliveryPolicy: {
-      rules: [
-        {
-          name: 'Global'
-          order: 0
-          actions: [
-            {
-              name: 'CacheExpiration'
-              parameters: {
-                typeName: 'DeliveryRuleCacheExpirationActionParameters'
-                cacheBehavior: 'SetIfMissing'
-                cacheType: 'All'
-                cacheDuration: '10:00:00'
-              }
-            }
-          ]
-        }
-      ]
-    }
+    hostName: replace(replace(uistgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
+    httpPort: 80
+    httpsPort: 443
     originHostHeader: replace(replace(uistgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-    origins: [
-      {
-        name: replace(replace(replace(uistgacc.properties.primaryEndpoints.web, 'https://', ''), '/', ''), '.', '-')
-        properties: {
-          hostName: replace(replace(uistgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-          originHostHeader: replace(replace(uistgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-        }
-      }
-    ]
+    priority: 1
+    weight: 1000
+    enabledState: 'Enabled'
   }
 }
 
-// endpoint (ui / new website)
-resource cdnprofile_ui2endpoint 'Microsoft.Cdn/profiles/endpoints@2022-11-01-preview' = {
-  name: cdnUi2EndpointName
-  location: 'global'
-  tags: resourceTags
-  parent: cdnprofile
+resource frontDoorUi2Origin 'Microsoft.Cdn/profiles/originGroups/origins@2021-06-01' = {
+  name: frontDoorUi2OriginName
+  parent: frontDoorUi2OriginGroup
   properties: {
-    isCompressionEnabled: true
-    contentTypesToCompress: [
-      'application/eot'
-      'application/font'
-      'application/font-sfnt'
-      'application/javascript'
-      'application/json'
-      'application/opentype'
-      'application/otf'
-      'application/pkcs7-mime'
-      'application/truetype'
-      'application/ttf'
-      'application/vnd.ms-fontobject'
-      'application/xhtml+xml'
-      'application/xml'
-      'application/xml+rss'
-      'application/x-font-opentype'
-      'application/x-font-truetype'
-      'application/x-font-ttf'
-      'application/x-httpd-cgi'
-      'application/x-javascript'
-      'application/x-mpegurl'
-      'application/x-opentype'
-      'application/x-otf'
-      'application/x-perl'
-      'application/x-ttf'
-      'font/eot'
-      'font/ttf'
-      'font/otf'
-      'font/opentype'
-      'image/svg+xml'
-      'text/css'
-      'text/csv'
-      'text/html'
-      'text/javascript'
-      'text/js'
-      'text/plain'
-      'text/richtext'
-      'text/tab-separated-values'
-      'text/xml'
-      'text/x-script'
-      'text/x-component'
-      'text/x-java-source'
-    ]
-    deliveryPolicy: {
-      rules: [
-        {
-          name: 'Global'
-          order: 0
-          actions: [
-            {
-              name: 'CacheExpiration'
-              parameters: {
-                typeName: 'DeliveryRuleCacheExpirationActionParameters'
-                cacheBehavior: 'SetIfMissing'
-                cacheType: 'All'
-                cacheDuration: '02:00:00'
-              }
-            }
-          ]
-        }
-        {
-          name: 'EnforceHttps'
-          order: 1
-          conditions: [
-            {
-              name: 'RequestScheme'
-              parameters: {
-                typeName: 'DeliveryRuleRequestSchemeConditionParameters'
-                matchValues: [
-                  'HTTP'
-                ]
-                operator: 'Equal'
-                negateCondition: false
-                transforms: []
-              }
-            }
-          ]
-          actions: [
-            {
-              name: 'UrlRedirect'
-              parameters: {
-                typeName: 'DeliveryRuleUrlRedirectActionParameters'
-                redirectType: 'Found'
-                destinationProtocol: 'Https'
-              }
-            }
-          ]
-        }
-      ]
-    }
+    hostName: replace(replace(ui2stgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
+    httpPort: 80
+    httpsPort: 443
     originHostHeader: replace(replace(ui2stgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-    origins: [
-      {
-        name: replace(replace(replace(ui2stgacc.properties.primaryEndpoints.web, 'https://', ''), '/', ''), '.', '-')
-        properties: {
-          hostName: replace(replace(ui2stgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-          originHostHeader: replace(replace(ui2stgacc.properties.primaryEndpoints.web, 'https://', ''), '/', '')
-        }
-      }
+    priority: 1
+    weight: 1000
+    enabledState: 'Enabled'
+  }
+}
+
+// Front Door routes
+resource frontDoorImagesRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
+  name: frontDoorImagesRouteName
+  parent: frontDoorImagesEndpoint
+  dependsOn: [
+    frontDoorImagesOrigin
+  ]
+  properties: {
+    originGroup: {
+      id: frontDoorImagesOriginGroup.id
+    }
+    supportedProtocols: [
+      'Http'
+      'Https'
     ]
+    patternsToMatch: [
+      '/*'
+    ]
+    forwardingProtocol: 'HttpsOnly'
+    linkToDefaultDomain: 'Enabled'
+    httpsRedirect: 'Enabled'
+  }
+}
+
+resource frontDoorUiRoute 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
+  name: frontDoorUiRouteName
+  parent: frontDoorUiEndpoint
+  dependsOn: [
+    frontDoorUiOrigin
+  ]
+  properties: {
+    originGroup: {
+      id: frontDoorUiOriginGroup.id
+    }
+    supportedProtocols: [
+      'Http'
+      'Https'
+    ]
+    patternsToMatch: [
+      '/*'
+    ]
+    forwardingProtocol: 'HttpsOnly'
+    linkToDefaultDomain: 'Enabled'
+    httpsRedirect: 'Enabled'
+  }
+}
+
+resource frontDoorUi2Route 'Microsoft.Cdn/profiles/afdEndpoints/routes@2021-06-01' = {
+  name: frontDoorUi2RouteName
+  parent: frontDoorUi2Endpoint
+  dependsOn: [
+    frontDoorUi2Origin
+  ]
+  properties: {
+    originGroup: {
+      id: frontDoorUi2OriginGroup.id
+    }
+    supportedProtocols: [
+      'Http'
+      'Https'
+    ]
+    patternsToMatch: [
+      '/*'
+    ]
+    forwardingProtocol: 'HttpsOnly'
+    linkToDefaultDomain: 'Enabled'
+    httpsRedirect: 'Enabled'
   }
 }
 
@@ -1758,4 +1718,4 @@ resource chaosaksexperiment 'Microsoft.Chaos/experiments@2022-10-01-preview' = {
 ////////////////////////////////////////////////////////////////////////////////
 
 output cartsApiEndpoint string = 'https://${cartsapiaca.properties.configuration.ingress.fqdn}'
-output uiCdnEndpoint string = 'https://${cdnprofile_ui2endpoint.properties.hostName}'
+output uiFrontDoorEndpoint string = 'https://${frontDoorUi2Endpoint.properties.hostName}'
