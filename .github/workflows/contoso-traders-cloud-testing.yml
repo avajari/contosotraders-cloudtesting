@@ -21,7 +21,7 @@ env:
   CARTS_ACA_NAME: contoso-traders-carts
   CARTS_ACR_REPOSITORY_NAME: contosotradersapicarts
   CARTS_INTERNAL_ACA_NAME: contoso-traders-intcarts
-  CDN_PROFILE_NAME: contoso-traders-cdn
+  CDN_PROFILE_NAME: contoso-traders-afd
   CHAOS_AKS_EXPERIMENT_NAME: contoso-traders-chaos-aks-experiment
   KV_NAME: contosotraderskv
   LOAD_TEST_SERVICE_NAME: contoso-traders-loadtest
@@ -35,10 +35,10 @@ env:
   PRODUCT_DETAILS_CONTAINER_NAME: product-details
   PRODUCT_IMAGES_STORAGE_ACCOUNT_NAME: contosotradersimg
   PRODUCT_LIST_CONTAINER_NAME: product-list
-  PRODUCTS_CDN_ENDPOINT_NAME: contoso-traders-images
+  PRODUCTS_FRONTDOOR_ENDPOINT_NAME: contoso-traders-images
   RESOURCE_GROUP_NAME: contoso-traders-rg
   STORAGE_ACCOUNT_NAME: contosotradersimg
-  UI_CDN_ENDPOINT_NAME: contoso-traders-ui2
+  UI_FRONTDOOR_ENDPOINT_NAME: contoso-traders-ui2
   UI_STORAGE_ACCOUNT_NAME: contosotradersui2
   USER_ASSIGNED_MANAGED_IDENTITY_NAME: contoso-traders-mi-kv-access
 
@@ -53,7 +53,7 @@ jobs:
       azureAdAppObjId: ${{ steps.get-azureAdAppObjId.outputs.azureAdAppObjId }}
       cartsApiEndpoint: ${{ steps.get-cartsApiEndpoint.outputs.cartsApiEndpoint }}
       productsApiEndpoint: ${{ steps.get-productsApiEndpoint.outputs.productsApiEndpoint }}
-      uiCdnEndpoint: ${{ steps.get-uiCdnEndpoint.outputs.uiCdnEndpoint }}
+      uiFrontDoorEndpoint: ${{ steps.get-uiFrontDoorEndpoint.outputs.uiFrontDoorEndpoint }}
     concurrency:
       group: provision
       cancel-in-progress: true
@@ -185,7 +185,7 @@ jobs:
       - name: purge product images cdn endpoint
         uses: azure/CLI@v1
         with:
-          inlineScript: az cdn endpoint purge --no-wait --content-paths '/*' -n '${{ env.PRODUCTS_CDN_ENDPOINT_NAME }}${{ vars.SUFFIX }}' -g '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --profile-name '${{ env.CDN_PROFILE_NAME }}${{ vars.SUFFIX }}'
+          inlineScript: az afd endpoint purge --no-wait --content-paths '/*' --endpoint-name '${{ env.PRODUCTS_FRONTDOOR_ENDPOINT_NAME }}${{ vars.SUFFIX }}' -g '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --profile-name '${{ env.CDN_PROFILE_NAME }}${{ vars.SUFFIX }}'
       - name: extract acr password
         uses: azure/CLI@v1
         id: extract-acr-password
@@ -427,12 +427,12 @@ jobs:
       - name: purge ui cdn endpoint
         uses: azure/CLI@v1
         with:
-          inlineScript: az cdn endpoint purge --no-wait --content-paths '/*' -n '${{ env.UI_CDN_ENDPOINT_NAME }}${{ vars.SUFFIX }}' -g '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --profile-name '${{ env.CDN_PROFILE_NAME }}${{ vars.SUFFIX }}'
+          inlineScript: az afd endpoint purge --no-wait --content-paths '/*' --endpoint-name '${{ env.UI_FRONTDOOR_ENDPOINT_NAME }}${{ vars.SUFFIX }}' -g '${{ env.RESOURCE_GROUP_NAME }}${{ vars.SUFFIX }}' --profile-name '${{ env.CDN_PROFILE_NAME }}${{ vars.SUFFIX }}'
       - name: get ui cdn endpoint
         uses: azure/CLI@v1
-        id: get-uiCdnEndpoint
+        id: get-uiFrontDoorEndpoint
         with:
-          inlineScript: echo "uiCdnEndpoint"="$(az keyvault secret show --vault-name ${{ env.KV_NAME }}${{ vars.SUFFIX }} --name uiCdnEndpoint --query value -o tsv)" >> $GITHUB_OUTPUT
+          inlineScript: echo "uiFrontDoorEndpoint"="$(az keyvault secret show --vault-name ${{ env.KV_NAME }}${{ vars.SUFFIX }} --name uiFrontDoorEndpoint --query value -o tsv)" >> $GITHUB_OUTPUT
       - name: register auth callback (UI CDN)
         if: ${{ env.AADUSERNAME != '' && env.AADPASSWORD != '' }}
         uses: azure/CLI@v1
@@ -442,11 +442,11 @@ jobs:
               --method PATCH \
               --uri https://graph.microsoft.com/v1.0/applications/${{ steps.get-azureAdAppObjId.outputs.azureAdAppObjId }} \
               --headers 'Content-Type=application/json' \
-              --body '{"spa":{"redirectUris":["https://localhost:3000/authcallback","http://localhost:3000/authcallback","https://staging.contosotraders.com/authcallback","https://production.contosotraders.com/authcallback","https://cloudtesting.contosotraders.com/authcallback","https://${{ steps.get-uiCdnEndpoint.outputs.uiCdnEndpoint }}/authcallback"]}}'
+              --body '{"spa":{"redirectUris":["https://localhost:3000/authcallback","http://localhost:3000/authcallback","https://staging.contosotraders.com/authcallback","https://production.contosotraders.com/authcallback","https://cloudtesting.contosotraders.com/authcallback","https://${{ steps.get-uiFrontDoorEndpoint.outputs.uiFrontDoorEndpoint }}/authcallback"]}}'
       - name: display ui cdn endpoint
         uses: azure/CLI@v1
         with:
-          inlineScript: echo UI CDN endpoint accessible at https://$(az keyvault secret show --vault-name ${{ env.KV_NAME }}${{ vars.SUFFIX }} --name uiCdnEndpoint --query value -o tsv)
+          inlineScript: echo UI Front Door endpoint accessible at https://$(az keyvault secret show --vault-name ${{ env.KV_NAME }}${{ vars.SUFFIX }} --name uiFrontDoorEndpoint --query value -o tsv)
 
   load-tests-with-chaos-products-api:
     needs: [provision, playwright-tests-ui]
@@ -646,7 +646,7 @@ jobs:
         run: |
           echo "REACT_APP_APIURLSHOPPINGCART"="https://${{ needs.provision.outputs.cartsApiEndpoint }}/v1" >> $GITHUB_ENV
           echo "REACT_APP_APIURL"="https://${{ needs.provision.outputs.productsApiEndpoint }}/v1" >> $GITHUB_ENV
-          echo "REACT_APP_BASEURLFORPLAYWRIGHTTESTING"="https://${{ needs.provision.outputs.uiCdnEndpoint }}" >> $GITHUB_ENV
+          echo "REACT_APP_BASEURLFORPLAYWRIGHTTESTING"="https://${{ needs.provision.outputs.uiFrontDoorEndpoint }}" >> $GITHUB_ENV
       - name: Set env variables for testing login
         if: ${{ env.AADUSERNAME != '' && env.AADPASSWORD != '' }}
         run: |

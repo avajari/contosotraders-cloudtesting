@@ -28,7 +28,7 @@ internal class LoadTestRequestHandler : IRequestHandler<LoadTestRequest, IAction
                 ProductId = 17,
                 Name = "Dell Optiplex 380 17 inch (43.18 cms) Desktop",
                 Price = 1399,
-                ImageUrl = "https://contoso-traders-imagesctprod.azureedge.net/product-details/PID17-1.jpg",
+                ImageUrl = "https://contoso-traders-imagesctprod.azurefd.net/product-details/PID17-1.jpg",
                 CartItemId = Guid.NewGuid().ToString()
             };
 

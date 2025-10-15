@@ -43,7 +43,7 @@ variables:
   - name: CARTS_INTERNAL_ACA_NAME
     value: contoso-traders-intcarts
   - name: CDN_PROFILE_NAME
-    value: contoso-traders-cdn
+    value: contoso-traders-afd
   - name: CHAOS_AKS_EXPERIMENT_NAME
     value: contoso-traders-chaos-aks-experiment
   - name: KV_NAME
@@ -70,13 +70,13 @@ variables:
     value: contosotradersimg
   - name: PRODUCT_LIST_CONTAINER_NAME
     value: product-list
-  - name: PRODUCTS_CDN_ENDPOINT_NAME
+  - name: PRODUCTS_FRONTDOOR_ENDPOINT_NAME
     value: contoso-traders-images
   - name: RESOURCE_GROUP_NAME
     value: contoso-traders-rg
   - name: STORAGE_ACCOUNT_NAME
     value: contosotradersimg
-  - name: UI_CDN_ENDPOINT_NAME
+  - name: UI_FRONTDOOR_ENDPOINT_NAME
     value: contoso-traders-ui2
   - name: UI_STORAGE_ACCOUNT_NAME
     value: contosotradersui2
@@ -240,7 +240,7 @@ stages:
             inputs:
               azureSubscription: SERVICEPRINCIPAL
               scriptLocation: inlineScript
-              inlineScript: az cdn endpoint purge --no-wait --content-paths '/*' -n '$(PRODUCTS_CDN_ENDPOINT_NAME)$(SUFFIX)' -g '$(RESOURCE_GROUP_NAME)$(SUFFIX)' --profile-name '$(CDN_PROFILE_NAME)$(SUFFIX)'
+              inlineScript: az afd endpoint purge --no-wait --content-paths '/*' --endpoint-name '$(PRODUCTS_FRONTDOOR_ENDPOINT_NAME)$(SUFFIX)' -g '$(RESOURCE_GROUP_NAME)$(SUFFIX)' --profile-name '$(CDN_PROFILE_NAME)$(SUFFIX)'
           - task: AzureCLI@1
             displayName: extract acr password
             name: extractAcrPassword
@@ -531,14 +531,14 @@ stages:
             inputs:
               azureSubscription: SERVICEPRINCIPAL
               scriptLocation: inlineScript
-              inlineScript: az cdn endpoint purge --no-wait --content-paths '/*' -n '$(UI_CDN_ENDPOINT_NAME)$(SUFFIX)' -g '$(RESOURCE_GROUP_NAME)$(SUFFIX)' --profile-name '$(CDN_PROFILE_NAME)$(SUFFIX)'
+              inlineScript: az afd endpoint purge --no-wait --content-paths '/*' --endpoint-name '$(UI_FRONTDOOR_ENDPOINT_NAME)$(SUFFIX)' -g '$(RESOURCE_GROUP_NAME)$(SUFFIX)' --profile-name '$(CDN_PROFILE_NAME)$(SUFFIX)'
           - task: AzureCLI@1
             displayName: get ui cdn endpoint
-            name: getUiCdnEndpoint
+            name: getUiFrontDoorEndpoint
             inputs:
               azureSubscription: SERVICEPRINCIPAL
               scriptLocation: inlineScript
-              inlineScript: echo "##vso[task.setvariable variable=uiCdnEndpoint;isOutput=true]$(az keyvault secret show --vault-name $(KV_NAME)$(SUFFIX) --name uiCdnEndpoint --query value -o tsv)"
+              inlineScript: echo "##vso[task.setvariable variable=uiFrontDoorEndpoint;isOutput=true]$(az keyvault secret show --vault-name $(KV_NAME)$(SUFFIX) --name uiFrontDoorEndpoint --query value -o tsv)"
           - task: AzureCLI@1
             displayName: register auth callback (UI CDN)
             condition: and(ne(variables['AADUSERNAME'], ''), ne(variables['AADPASSWORD'], ''))
@@ -550,13 +550,13 @@ stages:
                   --method PATCH \
                   --uri https://graph.microsoft.com/v1.0/applications/$(getAzureAdAppObjId.azureAdAppObjId) \
                   --headers 'Content-Type=application/json' \
-                  --body '{"spa":{"redirectUris":["https://localhost:3000/authcallback","http://localhost:3000/authcallback","https://staging.contosotraders.com/authcallback","https://production.contosotraders.com/authcallback","https://cloudtesting.contosotraders.com/authcallback","https://$(getUiCdnEndpoint.uiCdnEndpoint)/authcallback"]}}'
+                  --body '{"spa":{"redirectUris":["https://localhost:3000/authcallback","http://localhost:3000/authcallback","https://staging.contosotraders.com/authcallback","https://production.contosotraders.com/authcallback","https://cloudtesting.contosotraders.com/authcallback","https://$(getUiFrontDoorEndpoint.uiFrontDoorEndpoint)/authcallback"]}}'
           - task: AzureCLI@1
             displayName: display ui cdn endpoint
             inputs:
               azureSubscription: SERVICEPRINCIPAL
               scriptLocation: inlineScript
-              inlineScript: echo UI CDN endpoint accessible at https://$(az keyvault secret show --vault-name $(KV_NAME)$(SUFFIX) --name uiCdnEndpoint --query value -o tsv)
+              inlineScript: echo UI Front Door endpoint accessible at https://$(az keyvault secret show --vault-name $(KV_NAME)$(SUFFIX) --name uiFrontDoorEndpoint --query value -o tsv)
 
       - job: load_tests_with_chaos_products_api
         dependsOn: [provision, playwright_tests_ui]
@@ -721,7 +721,7 @@ stages:
         variables:
           APIURLSHOPPINGCART: $[ dependencies.provision.outputs['getCartsApiEndpoint.cartsApiEndpoint'] ]
           APIURL: $[ dependencies.provision.outputs['getProductsApiEndpoint.productsApiEndpoint'] ]
-          BASEURLFORPLAYWRIGHTTESTING: $[ dependencies.provision.outputs['getUiCdnEndpoint.uiCdnEndpoint'] ]
+          BASEURLFORPLAYWRIGHTTESTING: $[ dependencies.provision.outputs['getUiFrontDoorEndpoint.uiFrontDoorEndpoint'] ]
           B2CCLIENTID: $[ dependencies.provision.outputs['getAzureAdAppClientId.azureAdAppClientId'] ]
         steps:
           - task: NodeTool@0
