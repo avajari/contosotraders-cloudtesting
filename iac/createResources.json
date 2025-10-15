@@ -1,0 +1,1885 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "17851185376497524921"
+    }
+  },
+  "parameters": {
+    "suffix": {
+      "type": "string",
+      "minLength": 3,
+      "maxLength": 6,
+      "metadata": {
+        "description": "A unique environment suffix (max 6 characters, alphanumeric only)."
+      }
+    },
+    "sqlPassword": {
+      "type": "securestring",
+      "metadata": {
+        "description": "A password which will be set on all SQL Azure DBs."
+      }
+    },
+    "resourceLocation": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    },
+    "tenantId": {
+      "type": "string",
+      "defaultValue": "[subscription().tenantId]"
+    },
+    "aksLinuxAdminUsername": {
+      "type": "string"
+    },
+    "prefix": {
+      "type": "string",
+      "defaultValue": "contosotraders"
+    },
+    "prefixHyphenated": {
+      "type": "string",
+      "defaultValue": "contoso-traders"
+    },
+    "sqlServerHostName": {
+      "type": "string",
+      "defaultValue": "[environment().suffixes.sqlServerHostname]"
+    },
+    "deployPrivateEndpoints": {
+      "type": "bool",
+      "defaultValue": false
+    }
+  },
+  "variables": {
+    "$fxv#0": "$ErrorActionPreference = 'Stop'\n$storageAccount = Get-AzStorageAccount -ResourceGroupName $env:ResourceGroupName -AccountName $env:StorageAccountName\nEnable-AzStorageStaticWebsite -Context $storageAccount.Context -IndexDocument 'index.html' -ErrorDocument404Path 'index.html'\n",
+    "$fxv#1": "$ErrorActionPreference = 'Stop'\n$storageAccount = Get-AzStorageAccount -ResourceGroupName $env:ResourceGroupName -AccountName $env:StorageAccountName\nEnable-AzStorageStaticWebsite -Context $storageAccount.Context -IndexDocument 'index.html' -ErrorDocument404Path 'index.html'\n",
+    "$fxv#2": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQDmGzcTpLPWs7LSA8xCVDXgAa/9dLR+7OWAkcxjHcfZ++vpBhww2MbN3WErdTv/3ItheqRIxwhs1sZ2D2NKHdg69NAU1gZrVDUTQosRyt7qa2xQxm5vO3vsPr9rHWKscwbev/KtUt2rQMWE4yDoozn9yUqYtWvW9Nj+/PMCyWJ48WNweEMh4MMbvfZozoSV1qFIVT+8R4xHDP1FtjQOD+P88cpB81xgUtQGXkKQgRGPxhMwS/S8CcEIPGJufh7mVjUrcXZNnv+Uf5NSSBdVvUKhwUiW7JqgVI38vqL6OOGnEO34GfCMTLQoPPFt3cTCyJFqvYY2w7XGYMNV3xYxortiaxKfdflrd4BOqejm/dxFMuRt96WIHiUN7u8G7lTZ2DoAJviOXxodDrgm33nFHQjhO0XndEkZ44DbGd/aOLk36jyMOW2Z25wVILGggB6lMsPcE6VrTQsOT0RtzdA59v3gdq7Phs/H0Oqhi9uA1rsgsd7sqzj4vpdaq9rrAK1gQ9ODQi8kN5pvwD5wWgnzT78/3kMQq2oLtrZrbPFNQS5TZJ9Hu/kMnCxRpf5rAIvG6u5wP4Up64Goa8y7ZOBHs3I0WGw55HL0NRkJRqd9PIvPo/C7cYoy5U1tskzzJkZoTPsU+4AQtPojuRX0OQlSH+VvXbEzyVJTnrL9FsWbfWm6KQ== localadmin@highwaystar\n",
+    "kvName": "[format('{0}kv{1}', parameters('prefix'), parameters('suffix'))]",
+    "kvSecretNameProductsApiEndpoint": "productsApiEndpoint",
+    "kvSecretNameProductsDbConnStr": "productsDbConnectionString",
+    "kvSecretNameProfilesDbConnStr": "profilesDbConnectionString",
+    "kvSecretNameStocksDbConnStr": "stocksDbConnectionString",
+    "kvSecretNameCartsApiEndpoint": "cartsApiEndpoint",
+    "kvSecretNameCartsInternalApiEndpoint": "cartsInternalApiEndpoint",
+    "kvSecretNameCartsDbConnStr": "cartsDbConnectionString",
+    "kvSecretNameImagesEndpoint": "imagesEndpoint",
+    "kvSecretNameAppInsightsConnStr": "appInsightsConnectionString",
+    "kvSecretNameUiFrontDoorEndpoint": "uiFrontDoorEndpoint",
+    "kvSecretNameVnetAcaSubnetId": "vnetAcaSubnetId",
+    "userAssignedMIForKVAccessName": "[format('{0}-mi-kv-access{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "stocksDbAcctName": "[format('{0}-stocks{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "stocksDbName": "stocksdb",
+    "stocksDbStocksContainerName": "stocks",
+    "cartsDbAcctName": "[format('{0}-carts{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "cartsDbName": "cartsdb",
+    "cartsDbStocksContainerName": "carts",
+    "productsApiAppSvcPlanName": "[format('{0}-products{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "productsApiAppSvcName": "[format('{0}-products{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "productsApiSettingNameKeyVaultEndpoint": "KeyVaultEndpoint",
+    "productsApiSettingNameManagedIdentityClientId": "ManagedIdentityClientId",
+    "productsDbServerName": "[format('{0}-products{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "productsDbName": "productsdb",
+    "productsDbServerAdminLogin": "localadmin",
+    "productsDbServerAdminPassword": "[parameters('sqlPassword')]",
+    "profilesDbServerName": "[format('{0}-profiles{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "profilesDbName": "profilesdb",
+    "profilesDbServerAdminLogin": "localadmin",
+    "profilesDbServerAdminPassword": "[parameters('sqlPassword')]",
+    "cartsApiAcaName": "[format('{0}-carts{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "cartsApiAcaEnvName": "[format('{0}acaenv{1}', parameters('prefix'), parameters('suffix'))]",
+    "cartsApiAcaSecretAcrPassword": "acr-password",
+    "cartsApiAcaContainerDetailsName": "[format('{0}-carts{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "cartsApiSettingNameKeyVaultEndpoint": "KeyVaultEndpoint",
+    "cartsApiSettingNameManagedIdentityClientId": "ManagedIdentityClientId",
+    "cartsInternalApiAcaName": "[format('{0}-intcarts{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "cartsInternalApiAcaEnvName": "[format('{0}intacaenv{1}', parameters('prefix'), parameters('suffix'))]",
+    "cartsInternalApiAcaSecretAcrPassword": "acr-password",
+    "cartsInternalApiAcaContainerDetailsName": "[format('{0}-intcarts{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "cartsInternalApiSettingNameKeyVaultEndpoint": "KeyVaultEndpoint",
+    "cartsInternalApiSettingNameManagedIdentityClientId": "ManagedIdentityClientId",
+    "productImagesStgAccName": "[format('{0}img{1}', parameters('prefix'), parameters('suffix'))]",
+    "productImagesProductDetailsContainerName": "product-details",
+    "productImagesProductListContainerName": "product-list",
+    "uiStgAccName": "[format('{0}ui{1}', parameters('prefix'), parameters('suffix'))]",
+    "ui2StgAccName": "[format('{0}ui2{1}', parameters('prefix'), parameters('suffix'))]",
+    "imageClassifierStgAccName": "[format('{0}ic{1}', parameters('prefix'), parameters('suffix'))]",
+    "imageClassifierWebsiteUploadsContainerName": "website-uploads",
+    "frontDoorProfileName": "[format('{0}-afd{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "frontDoorImagesEndpointName": "[format('{0}-images{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "frontDoorUiEndpointName": "[format('{0}-ui{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "frontDoorUi2EndpointName": "[format('{0}-ui2{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "frontDoorImagesOriginGroupName": "ImagesOriginGroup",
+    "frontDoorUiOriginGroupName": "UiOriginGroup",
+    "frontDoorUi2OriginGroupName": "Ui2OriginGroup",
+    "frontDoorImagesOriginName": "ImagesOrigin",
+    "frontDoorUiOriginName": "UiOrigin",
+    "frontDoorUi2OriginName": "Ui2Origin",
+    "frontDoorImagesRouteName": "ImagesRoute",
+    "frontDoorUiRouteName": "UiRoute",
+    "frontDoorUi2RouteName": "Ui2Route",
+    "acrName": "[format('{0}acr{1}', parameters('prefix'), parameters('suffix'))]",
+    "loadTestSvcName": "[format('{0}-loadtest{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "logAnalyticsWorkspaceName": "[format('{0}-loganalytics{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "appInsightsName": "[format('{0}-ai{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "portalDashboardName": "[format('{0}-dashboard{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "aksClusterName": "[format('{0}-aks{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "aksClusterDnsPrefix": "[format('{0}-aks{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "aksClusterNodeResourceGroup": "[format('{0}-aks-nodes-rg{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "vnetName": "[format('{0}-vnet{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "vnetAddressSpace": "10.0.0.0/16",
+    "vnetAcaSubnetName": "subnet-aca",
+    "vnetAcaSubnetAddressPrefix": "10.0.0.0/23",
+    "vnetVmSubnetName": "subnet-vm",
+    "vnetVmSubnetAddressPrefix": "10.0.2.0/23",
+    "vnetLoadTestSubnetName": "subnet-loadtest",
+    "vnetLoadTestSubnetAddressPrefix": "10.0.4.0/23",
+    "jumpboxPublicIpName": "[format('{0}-jumpbox{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "jumpboxNsgName": "[format('{0}-jumpbox{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "jumpboxNicName": "[format('{0}-jumpbox{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "jumpboxVmName": "jumpboxvm",
+    "jumpboxVmAdminLogin": "localadmin",
+    "jumpboxVmAdminPassword": "[parameters('sqlPassword')]",
+    "jumpboxVmShutdownSchduleName": "shutdown-computevm-jumpboxvm",
+    "jumpboxVmShutdownScheduleTimezoneId": "UTC",
+    "privateDnsZoneVnetLinkName": "[format('{0}-privatednszone-vnet-link{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "chaosKvExperimentName": "[format('{0}-chaos-kv-experiment{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "chaosKvSelectorId": "[guid(format('{0}-chaos-kv-selector-id{1}', parameters('prefixHyphenated'), parameters('suffix')))]",
+    "chaosAksExperimentName": "[format('{0}-chaos-aks-experiment{1}', parameters('prefixHyphenated'), parameters('suffix'))]",
+    "chaosAksSelectorId": "[guid(format('{0}-chaos-aks-selector-id{1}', parameters('prefixHyphenated'), parameters('suffix')))]",
+    "resourceTags": {
+      "Product": "[parameters('prefixHyphenated')]",
+      "Environment": "[parameters('suffix')]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameProductsApiEndpoint'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "endpoint url (fqdn) of the products api",
+        "value": "placeholder"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameProductsDbConnStr'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "connection string to the products db",
+        "value": "[format('Server=tcp:{0}{1},1433;Initial Catalog={2};Persist Security Info=False;User ID={3};Password={4};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;', variables('productsDbServerName'), parameters('sqlServerHostName'), variables('productsDbName'), variables('productsDbServerAdminLogin'), variables('productsDbServerAdminPassword'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameProfilesDbConnStr'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "connection string to the profiles db",
+        "value": "[format('Server=tcp:{0}{1},1433;Initial Catalog={2};Persist Security Info=False;User ID={3};Password={4};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;', variables('profilesDbServerName'), parameters('sqlServerHostName'), variables('profilesDbName'), variables('profilesDbServerAdminLogin'), variables('profilesDbServerAdminPassword'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameStocksDbConnStr'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "connection string to the stocks db",
+        "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('stocksDbAcctName')), '2022-08-15').connectionStrings[0].connectionString]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('stocksDbAcctName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameCartsApiEndpoint'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "endpoint url (fqdn) of the carts api",
+        "value": "[reference(resourceId('Microsoft.App/containerApps', variables('cartsApiAcaName')), '2022-06-01-preview').configuration.ingress.fqdn]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('cartsApiAcaName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameCartsInternalApiEndpoint'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "endpoint url (fqdn) of the (internal) carts api",
+        "value": "[if(parameters('deployPrivateEndpoints'), reference(resourceId('Microsoft.App/containerApps', variables('cartsInternalApiAcaName')), '2022-06-01-preview').configuration.ingress.fqdn, '')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('cartsInternalApiAcaName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameCartsDbConnStr'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "connection string to the carts db",
+        "value": "[listConnectionStrings(resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cartsDbAcctName')), '2022-08-15').connectionStrings[0].connectionString]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cartsDbAcctName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameImagesEndpoint'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "endpoint url of the images front door",
+        "value": "[format('https://{0}', reference(resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorImagesEndpointName')), '2021-06-01').hostName)]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorImagesEndpointName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameAppInsightsConnStr'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "connection string to the app insights instance",
+        "value": "[reference(resourceId('Microsoft.Insights/components', variables('appInsightsName')), '2020-02-02').ConnectionString]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Insights/components', variables('appInsightsName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameUiFrontDoorEndpoint'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "endpoint url (front door endpoint) of the ui",
+        "value": "[reference(resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName')), '2021-06-01').hostName]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.KeyVault/vaults/secrets",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), variables('kvSecretNameVnetAcaSubnetId'))]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "contentType": "subnet id of the aca subnet",
+        "value": "[if(parameters('deployPrivateEndpoints'), reference(resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')), '2022-07-01').subnets[0].id, '')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults/accessPolicies",
+      "apiVersion": "2022-07-01",
+      "name": "[format('{0}/{1}', variables('kvName'), 'replace')]",
+      "properties": {
+        "accessPolicies": [
+          {
+            "tenantId": "[parameters('tenantId')]",
+            "objectId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')), '2022-01-31-preview').principalId]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list"
+              ]
+            }
+          },
+          {
+            "tenantId": "[parameters('tenantId')]",
+            "objectId": "[reference(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), '2022-09-01').identityProfile.kubeletidentity.objectId]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list"
+              ]
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2022-08-15",
+      "name": "[format('{0}/{1}/{2}', variables('stocksDbAcctName'), variables('stocksDbName'), variables('stocksDbStocksContainerName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "resource": {
+          "id": "[variables('stocksDbStocksContainerName')]",
+          "partitionKey": {
+            "paths": [
+              "/id"
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('stocksDbAcctName'), variables('stocksDbName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2022-08-15",
+      "name": "[format('{0}/{1}', variables('stocksDbAcctName'), variables('stocksDbName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "resource": {
+          "id": "[variables('stocksDbName')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('stocksDbAcctName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases/containers",
+      "apiVersion": "2022-08-15",
+      "name": "[format('{0}/{1}/{2}', variables('cartsDbAcctName'), variables('cartsDbName'), variables('cartsDbStocksContainerName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "resource": {
+          "id": "[variables('cartsDbStocksContainerName')]",
+          "partitionKey": {
+            "paths": [
+              "/Email"
+            ]
+          }
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts/sqlDatabases', variables('cartsDbAcctName'), variables('cartsDbName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts/sqlDatabases",
+      "apiVersion": "2022-08-15",
+      "name": "[format('{0}/{1}', variables('cartsDbAcctName'), variables('cartsDbName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "resource": {
+          "id": "[variables('cartsDbName')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.DocumentDB/databaseAccounts', variables('cartsDbAcctName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[format('{0}/{1}', variables('productsDbServerName'), variables('productsDbName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "capacity": 5,
+        "tier": "Basic",
+        "name": "Basic"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('productsDbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[format('{0}/{1}', variables('productsDbServerName'), 'AllowAllWindowsAzureIps')]",
+      "properties": {
+        "endIpAddress": "0.0.0.0",
+        "startIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('productsDbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[format('{0}/{1}', variables('productsDbServerName'), 'AllowLocalDevelopment')]",
+      "properties": {
+        "endIpAddress": "255.255.255.255",
+        "startIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('productsDbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/databases",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[format('{0}/{1}', variables('profilesDbServerName'), variables('profilesDbName'))]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "capacity": 5,
+        "tier": "Basic",
+        "name": "Basic"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('profilesDbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers/firewallRules",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[format('{0}/{1}', variables('profilesDbServerName'), 'AllowAllWindowsAzureIps')]",
+      "properties": {
+        "endIpAddress": "0.0.0.0",
+        "startIpAddress": "0.0.0.0"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Sql/servers', variables('profilesDbServerName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}/{2}', variables('productImagesStgAccName'), 'default', variables('productImagesProductDetailsContainerName'))]",
+      "properties": {
+        "publicAccess": "Container"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('productImagesStgAccName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}/{2}', variables('productImagesStgAccName'), 'default', variables('productImagesProductListContainerName'))]",
+      "properties": {
+        "publicAccess": "Container"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('productImagesStgAccName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('productImagesStgAccName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('productImagesStgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('uiStgAccName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('ui2StgAccName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}/{2}', variables('imageClassifierStgAccName'), 'default', variables('imageClassifierWebsiteUploadsContainerName'))]",
+      "properties": {
+        "publicAccess": "Container"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts/blobServices', variables('imageClassifierStgAccName'), 'default')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts/blobServices",
+      "apiVersion": "2023-01-01",
+      "name": "[format('{0}/{1}', variables('imageClassifierStgAccName'), 'default')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('imageClassifierStgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/targets/capabilities",
+      "apiVersion": "2022-10-01-preview",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('kvName'))]",
+      "name": "[format('{0}/{1}', 'Microsoft-KeyVault', 'DenyAccess-1.0')]",
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), 'Microsoft.Chaos/targets', 'Microsoft-KeyVault')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/targets/capabilities",
+      "apiVersion": "2022-10-01-preview",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', variables('aksClusterName'))]",
+      "name": "[format('{0}/{1}', 'Microsoft-AzureKubernetesServiceChaosMesh', 'PodChaos-2.1')]",
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), 'Microsoft.Chaos/targets', 'Microsoft-AzureKubernetesServiceChaosMesh')]"
+      ]
+    },
+    {
+      "type": "Microsoft.KeyVault/vaults",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('kvName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "accessPolicies": [
+          {
+            "objectId": "31de563b-fc1a-43a2-9031-c47630038328",
+            "tenantId": "[parameters('tenantId')]",
+            "permissions": {
+              "secrets": [
+                "get",
+                "list",
+                "delete",
+                "set",
+                "recover",
+                "backup",
+                "restore"
+              ]
+            }
+          }
+        ],
+        "sku": {
+          "family": "A",
+          "name": "standard"
+        },
+        "softDeleteRetentionInDays": 7,
+        "tenantId": "[parameters('tenantId')]"
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('kvName'))]",
+      "name": "[guid(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), resourceId('Microsoft.Chaos/experiments', variables('chaosKvExperimentName')), extensionResourceId(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), 'Microsoft.Authorization/roleDefinitions', 'f25e0fa2-a7c8-4377-a976-54943a77a395'))]",
+      "properties": {
+        "roleDefinitionId": "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), 'Microsoft.Authorization/roleDefinitions', 'f25e0fa2-a7c8-4377-a976-54943a77a395')]",
+        "principalId": "[reference(resourceId('Microsoft.Chaos/experiments', variables('chaosKvExperimentName')), '2022-10-01-preview', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Chaos/experiments', variables('chaosKvExperimentName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2022-01-31-preview",
+      "name": "[variables('userAssignedMIForKVAccessName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]"
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2022-08-15",
+      "name": "[variables('stocksDbAcctName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "enableFreeTier": false,
+        "capabilities": [
+          {
+            "name": "EnableServerless"
+          }
+        ],
+        "locations": [
+          {
+            "locationName": "[parameters('resourceLocation')]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.DocumentDB/databaseAccounts",
+      "apiVersion": "2022-08-15",
+      "name": "[variables('cartsDbAcctName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "databaseAccountOfferType": "Standard",
+        "enableFreeTier": false,
+        "capabilities": [
+          {
+            "name": "EnableServerless"
+          }
+        ],
+        "locations": [
+          {
+            "locationName": "[parameters('resourceLocation')]"
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('productsApiAppSvcPlanName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "B1"
+      },
+      "properties": {
+        "reserved": true
+      },
+      "kind": "linux"
+    },
+    {
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2022-03-01",
+      "name": "[variables('productsApiAppSvcName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')))]": {}
+        }
+      },
+      "properties": {
+        "clientAffinityEnabled": false,
+        "httpsOnly": true,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', variables('productsApiAppSvcPlanName'))]",
+        "siteConfig": {
+          "linuxFxVersion": "DOTNETCORE|7.0",
+          "alwaysOn": true,
+          "appSettings": [
+            {
+              "name": "[variables('productsApiSettingNameKeyVaultEndpoint')]",
+              "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), '2022-07-01').vaultUri]"
+            },
+            {
+              "name": "[variables('productsApiSettingNameManagedIdentityClientId')]",
+              "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')), '2022-01-31-preview').clientId]"
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.Web/serverfarms', variables('productsApiAppSvcPlanName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[variables('productsDbServerName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "administratorLogin": "[variables('productsDbServerAdminLogin')]",
+        "administratorLoginPassword": "[variables('productsDbServerAdminPassword')]",
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Sql/servers",
+      "apiVersion": "2022-05-01-preview",
+      "name": "[variables('profilesDbServerName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "administratorLogin": "[variables('profilesDbServerAdminLogin')]",
+        "administratorLoginPassword": "[variables('profilesDbServerAdminPassword')]",
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2022-06-01-preview",
+      "name": "[variables('cartsApiAcaEnvName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Consumption"
+      },
+      "properties": {
+        "zoneRedundant": false
+      }
+    },
+    {
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2022-06-01-preview",
+      "name": "[variables('cartsApiAcaName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')))]": {}
+        }
+      },
+      "properties": {
+        "configuration": {
+          "activeRevisionsMode": "Single",
+          "ingress": {
+            "external": true,
+            "allowInsecure": false,
+            "targetPort": 80,
+            "traffic": [
+              {
+                "latestRevision": true,
+                "weight": 100
+              }
+            ]
+          },
+          "registries": [
+            {
+              "passwordSecretRef": "[variables('cartsApiAcaSecretAcrPassword')]",
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2022-02-01-preview').loginServer]",
+              "username": "[variables('acrName')]"
+            }
+          ],
+          "secrets": [
+            {
+              "name": "[variables('cartsApiAcaSecretAcrPassword')]",
+              "value": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2022-02-01-preview').passwords[0].value]"
+            }
+          ]
+        },
+        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('cartsApiAcaEnvName'))]",
+        "template": {
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 10,
+            "rules": [
+              {
+                "name": "http-scaling-rule",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "3"
+                  }
+                }
+              }
+            ]
+          },
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "[variables('cartsApiSettingNameKeyVaultEndpoint')]",
+                  "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), '2022-07-01').vaultUri]"
+                },
+                {
+                  "name": "[variables('cartsApiSettingNameManagedIdentityClientId')]",
+                  "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')), '2022-01-31-preview').clientId]"
+                }
+              ],
+              "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+              "name": "[variables('cartsApiAcaContainerDetailsName')]",
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1.0Gi"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', variables('cartsApiAcaEnvName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('productImagesStgAccName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": true
+      }
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('uiStgAccName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": true
+      }
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2022-01-31-preview",
+      "name": "DeploymentScript",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('uiStgAccName'))]",
+      "name": "[guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript'), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript'), '2022-01-31-preview').principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "DeploymentScript",
+      "location": "[parameters('resourceLocation')]",
+      "kind": "AzurePowerShell",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript'))]": {}
+        }
+      },
+      "properties": {
+        "azPowerShellVersion": "11.0",
+        "scriptContent": "[variables('$fxv#0')]",
+        "retentionInterval": "PT4H",
+        "environmentVariables": [
+          {
+            "name": "ResourceGroupName",
+            "value": "[resourceGroup().name]"
+          },
+          {
+            "name": "StorageAccountName",
+            "value": "[variables('uiStgAccName')]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName')), 'Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript'), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('ui2StgAccName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": true
+      }
+    },
+    {
+      "type": "Microsoft.ManagedIdentity/userAssignedIdentities",
+      "apiVersion": "2022-01-31-preview",
+      "name": "DeploymentScript2",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]"
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('ui2StgAccName'))]",
+      "name": "[guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript2'), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab'))]",
+      "properties": {
+        "roleDefinitionId": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')]",
+        "principalId": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript2'), '2022-01-31-preview').principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript2')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Resources/deploymentScripts",
+      "apiVersion": "2020-10-01",
+      "name": "DeploymentScript2",
+      "location": "[parameters('resourceLocation')]",
+      "kind": "AzurePowerShell",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript2'))]": {}
+        }
+      },
+      "properties": {
+        "azPowerShellVersion": "11.0",
+        "scriptContent": "[variables('$fxv#1')]",
+        "retentionInterval": "PT4H",
+        "environmentVariables": [
+          {
+            "name": "ResourceGroupName",
+            "value": "[resourceGroup().name]"
+          },
+          {
+            "name": "StorageAccountName",
+            "value": "[variables('ui2StgAccName')]"
+          }
+        ]
+      },
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName')), 'Microsoft.Authorization/roleAssignments', guid(resourceGroup().id, resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript'), subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '17d1049b-9a84-46fb-8f53-869881c3d3ab')))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', 'DeploymentScript2')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Storage/storageAccounts",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('imageClassifierStgAccName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Standard_LRS"
+      },
+      "kind": "StorageV2",
+      "properties": {
+        "allowBlobPublicAccess": true
+      }
+    },
+    {
+      "type": "Microsoft.Cdn/profiles",
+      "apiVersion": "2021-06-01",
+      "name": "[variables('frontDoorProfileName')]",
+      "location": "global",
+      "sku": {
+        "name": "Standard_AzureFrontDoor"
+      },
+      "tags": "[variables('resourceTags')]"
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorImagesEndpointName'))]",
+      "location": "global",
+      "properties": {
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorUiEndpointName'))]",
+      "location": "global",
+      "properties": {
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName'))]",
+      "location": "global",
+      "properties": {
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'))]",
+      "properties": {
+        "loadBalancingSettings": {
+          "sampleSize": 4,
+          "successfulSamplesRequired": 3,
+          "additionalLatencyInMilliseconds": 50
+        },
+        "healthProbeSettings": {
+          "probePath": "/",
+          "probeRequestType": "HEAD",
+          "probeProtocol": "Http",
+          "probeIntervalInSeconds": 100
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'))]",
+      "properties": {
+        "loadBalancingSettings": {
+          "sampleSize": 4,
+          "successfulSamplesRequired": 3,
+          "additionalLatencyInMilliseconds": 50
+        },
+        "healthProbeSettings": {
+          "probePath": "/",
+          "probeRequestType": "HEAD",
+          "probeProtocol": "Http",
+          "probeIntervalInSeconds": 100
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'))]",
+      "properties": {
+        "loadBalancingSettings": {
+          "sampleSize": 4,
+          "successfulSamplesRequired": 3,
+          "additionalLatencyInMilliseconds": 50
+        },
+        "healthProbeSettings": {
+          "probePath": "/",
+          "probeRequestType": "HEAD",
+          "probeProtocol": "Http",
+          "probeIntervalInSeconds": 100
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles', variables('frontDoorProfileName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups/origins",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'), variables('frontDoorImagesOriginName'))]",
+      "properties": {
+        "hostName": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('productImagesStgAccName')), '2023-01-01').primaryEndpoints.blob, 'https://', ''), '/', '')]",
+        "httpPort": 80,
+        "httpsPort": 443,
+        "originHostHeader": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('productImagesStgAccName')), '2023-01-01').primaryEndpoints.blob, 'https://', ''), '/', '')]",
+        "priority": 1,
+        "weight": 1000,
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('productImagesStgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups/origins",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'), variables('frontDoorUiOriginName'))]",
+      "properties": {
+        "hostName": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName')), '2023-01-01').primaryEndpoints.web, 'https://', ''), '/', '')]",
+        "httpPort": 80,
+        "httpsPort": 443,
+        "originHostHeader": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName')), '2023-01-01').primaryEndpoints.web, 'https://', ''), '/', '')]",
+        "priority": 1,
+        "weight": 1000,
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('uiStgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/originGroups/origins",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'), variables('frontDoorUi2OriginName'))]",
+      "properties": {
+        "hostName": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName')), '2023-01-01').primaryEndpoints.web, 'https://', ''), '/', '')]",
+        "httpPort": 80,
+        "httpsPort": 443,
+        "originHostHeader": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName')), '2023-01-01').primaryEndpoints.web, 'https://', ''), '/', '')]",
+        "priority": 1,
+        "weight": 1000,
+        "enabledState": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'))]",
+        "[resourceId('Microsoft.Storage/storageAccounts', variables('ui2StgAccName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints/routes",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorImagesEndpointName'), variables('frontDoorImagesRouteName'))]",
+      "properties": {
+        "originGroup": {
+          "id": "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'))]"
+        },
+        "supportedProtocols": [
+          "Http",
+          "Https"
+        ],
+        "patternsToMatch": [
+          "/*"
+        ],
+        "forwardingProtocol": "HttpsOnly",
+        "linkToDefaultDomain": "Enabled",
+        "httpsRedirect": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorImagesEndpointName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups/origins', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'), variables('frontDoorImagesOriginName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorImagesOriginGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints/routes",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorUiEndpointName'), variables('frontDoorUiRouteName'))]",
+      "properties": {
+        "originGroup": {
+          "id": "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'))]"
+        },
+        "supportedProtocols": [
+          "Http",
+          "Https"
+        ],
+        "patternsToMatch": [
+          "/*"
+        ],
+        "forwardingProtocol": "HttpsOnly",
+        "linkToDefaultDomain": "Enabled",
+        "httpsRedirect": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorUiEndpointName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups/origins', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'), variables('frontDoorUiOriginName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUiOriginGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Cdn/profiles/afdEndpoints/routes",
+      "apiVersion": "2021-06-01",
+      "name": "[format('{0}/{1}/{2}', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName'), variables('frontDoorUi2RouteName'))]",
+      "properties": {
+        "originGroup": {
+          "id": "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'))]"
+        },
+        "supportedProtocols": [
+          "Http",
+          "Https"
+        ],
+        "patternsToMatch": [
+          "/*"
+        ],
+        "forwardingProtocol": "HttpsOnly",
+        "linkToDefaultDomain": "Enabled",
+        "httpsRedirect": "Enabled"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups/origins', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'), variables('frontDoorUi2OriginName'))]",
+        "[resourceId('Microsoft.Cdn/profiles/originGroups', variables('frontDoorProfileName'), variables('frontDoorUi2OriginGroupName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.ContainerRegistry/registries",
+      "apiVersion": "2022-02-01-preview",
+      "name": "[variables('acrName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Basic"
+      },
+      "properties": {
+        "adminUserEnabled": true,
+        "publicNetworkAccess": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.LoadTestService/loadTests",
+      "apiVersion": "2022-12-01",
+      "name": "[variables('loadTestSvcName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')))]": {}
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2022-10-01",
+      "name": "[variables('logAnalyticsWorkspaceName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "publicNetworkAccessForIngestion": "Enabled",
+        "publicNetworkAccessForQuery": "Enabled",
+        "sku": {
+          "name": "PerGB2018"
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Insights/components",
+      "apiVersion": "2020-02-02",
+      "name": "[variables('appInsightsName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "kind": "web",
+      "properties": {
+        "Application_Type": "web",
+        "WorkspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.OperationalInsights/workspaces', variables('logAnalyticsWorkspaceName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Portal/dashboards",
+      "apiVersion": "2020-09-01-preview",
+      "name": "[variables('portalDashboardName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "lenses": [
+          {
+            "order": 0,
+            "parts": [
+              {
+                "position": {
+                  "x": 0,
+                  "y": 0,
+                  "rowSpan": 4,
+                  "colSpan": 2
+                }
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "type": "Microsoft.ContainerService/managedClusters",
+      "apiVersion": "2022-09-01",
+      "name": "[variables('aksClusterName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "dnsPrefix": "[variables('aksClusterDnsPrefix')]",
+        "nodeResourceGroup": "[variables('aksClusterNodeResourceGroup')]",
+        "agentPoolProfiles": [
+          {
+            "name": "agentpool",
+            "osDiskSizeGB": 0,
+            "count": 1,
+            "vmSize": "standard_b2s",
+            "osType": "Linux",
+            "mode": "System"
+          }
+        ],
+        "linuxProfile": {
+          "adminUsername": "[parameters('aksLinuxAdminUsername')]",
+          "ssh": {
+            "publicKeys": [
+              {
+                "keyData": "[variables('$fxv#2')]"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Authorization/roleAssignments",
+      "apiVersion": "2022-04-01",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', variables('aksClusterName'))]",
+      "name": "[guid(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), resourceId('Microsoft.Chaos/experiments', variables('chaosAksExperimentName')), extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), 'Microsoft.Authorization/roleDefinitions', '0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8'))]",
+      "properties": {
+        "roleDefinitionId": "[extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), 'Microsoft.Authorization/roleDefinitions', '0ab0b1a8-8aac-4efd-b8c2-3ee1fb270be8')]",
+        "principalId": "[reference(resourceId('Microsoft.Chaos/experiments', variables('chaosAksExperimentName')), '2022-10-01-preview', 'full').identity.principalId]",
+        "principalType": "ServicePrincipal"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName'))]",
+        "[resourceId('Microsoft.Chaos/experiments', variables('chaosAksExperimentName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Network/virtualNetworks",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('vnetName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnetAddressSpace')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('vnetAcaSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('vnetAcaSubnetAddressPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('vnetVmSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('vnetVmSubnetAddressPrefix')]"
+            }
+          },
+          {
+            "name": "[variables('vnetLoadTestSubnetName')]",
+            "properties": {
+              "addressPrefix": "[variables('vnetLoadTestSubnetAddressPrefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('jumpboxPublicIpName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Standard",
+        "tier": "Regional"
+      },
+      "properties": {
+        "deleteOption": "Delete",
+        "publicIPAllocationMethod": "Static"
+      }
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('jumpboxNsgName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "allow-rdp-port-3389",
+            "properties": {
+              "access": "Allow",
+              "destinationAddressPrefix": "VirtualNetwork",
+              "destinationPortRange": "3389",
+              "direction": "Inbound",
+              "priority": 300,
+              "protocol": "*",
+              "sourceAddressPrefix": "*",
+              "sourcePortRange": "*"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "apiVersion": "2022-07-01",
+      "name": "[variables('jumpboxNicName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "nic-ip-config",
+            "properties": {
+              "primary": true,
+              "privateIPAllocationMethod": "Dynamic",
+              "subnet": {
+                "id": "[if(parameters('deployPrivateEndpoints'), reference(resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')), '2022-07-01').subnets[1].id, '')]"
+              },
+              "publicIPAddress": {
+                "id": "[if(parameters('deployPrivateEndpoints'), resourceId('Microsoft.Network/publicIPAddresses', variables('jumpboxPublicIpName')), '')]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[if(parameters('deployPrivateEndpoints'), resourceId('Microsoft.Network/networkSecurityGroups', variables('jumpboxNsgName')), '')]"
+        },
+        "nicType": "Standard"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkSecurityGroups', variables('jumpboxNsgName'))]",
+        "[resourceId('Microsoft.Network/publicIPAddresses', variables('jumpboxPublicIpName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "apiVersion": "2022-08-01",
+      "name": "[variables('jumpboxVmName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "standard_b2s"
+        },
+        "storageProfile": {
+          "osDisk": {
+            "createOption": "FromImage",
+            "managedDisk": {
+              "storageAccountType": "StandardSSD_LRS"
+            }
+          },
+          "imageReference": {
+            "offer": "WindowsServer",
+            "publisher": "MicrosoftWindowsServer",
+            "sku": "2019-datacenter-gensecond",
+            "version": "latest"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[if(parameters('deployPrivateEndpoints'), resourceId('Microsoft.Network/networkInterfaces', variables('jumpboxNicName')), '')]",
+              "properties": {
+                "deleteOption": "Delete"
+              }
+            }
+          ]
+        },
+        "osProfile": {
+          "adminPassword": "[variables('jumpboxVmAdminPassword')]",
+          "adminUsername": "[variables('jumpboxVmAdminLogin')]",
+          "computerName": "[variables('jumpboxVmName')]"
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/networkInterfaces', variables('jumpboxNicName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.DevTestLab/schedules",
+      "apiVersion": "2018-09-15",
+      "name": "[variables('jumpboxVmShutdownSchduleName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "properties": {
+        "targetResourceId": "[if(parameters('deployPrivateEndpoints'), resourceId('Microsoft.Compute/virtualMachines', variables('jumpboxVmName')), '')]",
+        "dailyRecurrence": {
+          "time": "2100"
+        },
+        "notificationSettings": {
+          "status": "Disabled"
+        },
+        "status": "Enabled",
+        "taskType": "ComputeVmShutdownTask",
+        "timeZoneId": "[variables('jumpboxVmShutdownScheduleTimezoneId')]"
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Compute/virtualMachines', variables('jumpboxVmName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.App/managedEnvironments",
+      "apiVersion": "2022-06-01-preview",
+      "name": "[variables('cartsInternalApiAcaEnvName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "sku": {
+        "name": "Consumption"
+      },
+      "properties": {
+        "zoneRedundant": false,
+        "vnetConfiguration": {
+          "infrastructureSubnetId": "[if(parameters('deployPrivateEndpoints'), reference(resourceId('Microsoft.Network/virtualNetworks', variables('vnetName')), '2022-07-01').subnets[0].id, '')]",
+          "internal": true
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.App/containerApps",
+      "apiVersion": "2022-06-01-preview",
+      "name": "[variables('cartsInternalApiAcaName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "UserAssigned",
+        "userAssignedIdentities": {
+          "[format('{0}', resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')))]": {}
+        }
+      },
+      "properties": {
+        "configuration": {
+          "activeRevisionsMode": "Single",
+          "ingress": {
+            "external": true,
+            "allowInsecure": false,
+            "targetPort": 80,
+            "traffic": [
+              {
+                "latestRevision": true,
+                "weight": 100
+              }
+            ]
+          },
+          "registries": [
+            {
+              "passwordSecretRef": "[variables('cartsInternalApiAcaSecretAcrPassword')]",
+              "server": "[reference(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2022-02-01-preview').loginServer]",
+              "username": "[variables('acrName')]"
+            }
+          ],
+          "secrets": [
+            {
+              "name": "[variables('cartsInternalApiAcaSecretAcrPassword')]",
+              "value": "[listCredentials(resourceId('Microsoft.ContainerRegistry/registries', variables('acrName')), '2022-02-01-preview').passwords[0].value]"
+            }
+          ]
+        },
+        "environmentId": "[resourceId('Microsoft.App/managedEnvironments', variables('cartsInternalApiAcaEnvName'))]",
+        "template": {
+          "scale": {
+            "minReplicas": 1,
+            "maxReplicas": 3,
+            "rules": [
+              {
+                "name": "http-scaling-rule",
+                "http": {
+                  "metadata": {
+                    "concurrentRequests": "3"
+                  }
+                }
+              }
+            ]
+          },
+          "containers": [
+            {
+              "env": [
+                {
+                  "name": "[variables('cartsInternalApiSettingNameKeyVaultEndpoint')]",
+                  "value": "[reference(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), '2022-07-01').vaultUri]"
+                },
+                {
+                  "name": "[variables('cartsInternalApiSettingNameManagedIdentityClientId')]",
+                  "value": "[reference(resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName')), '2022-01-31-preview').clientId]"
+                }
+              ],
+              "image": "mcr.microsoft.com/azuredocs/containerapps-helloworld:latest",
+              "name": "[variables('cartsInternalApiAcaContainerDetailsName')]",
+              "resources": {
+                "cpu": "[json('0.5')]",
+                "memory": "1.0Gi"
+              }
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerRegistry/registries', variables('acrName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', variables('cartsInternalApiAcaEnvName'))]",
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]",
+        "[resourceId('Microsoft.ManagedIdentity/userAssignedIdentities', variables('userAssignedMIForKVAccessName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/targets",
+      "apiVersion": "2022-10-01-preview",
+      "scope": "[format('Microsoft.KeyVault/vaults/{0}', variables('kvName'))]",
+      "name": "Microsoft-KeyVault",
+      "location": "[parameters('resourceLocation')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.KeyVault/vaults', variables('kvName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/experiments",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[variables('chaosKvExperimentName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "selectors": [
+          {
+            "type": "List",
+            "id": "[variables('chaosKvSelectorId')]",
+            "targets": [
+              {
+                "id": "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), 'Microsoft.Chaos/targets', 'Microsoft-KeyVault')]",
+                "type": "ChaosTarget"
+              }
+            ]
+          }
+        ],
+        "startOnCreation": false,
+        "steps": [
+          {
+            "name": "step1",
+            "branches": [
+              {
+                "name": "branch1",
+                "actions": [
+                  {
+                    "name": "urn:csci:microsoft:keyVault:denyAccess/1.0",
+                    "type": "continuous",
+                    "selectorId": "[variables('chaosKvSelectorId')]",
+                    "duration": "PT5M",
+                    "parameters": []
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.KeyVault/vaults', variables('kvName')), 'Microsoft.Chaos/targets', 'Microsoft-KeyVault')]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/targets",
+      "apiVersion": "2022-10-01-preview",
+      "scope": "[format('Microsoft.ContainerService/managedClusters/{0}', variables('aksClusterName'))]",
+      "name": "Microsoft-AzureKubernetesServiceChaosMesh",
+      "location": "[parameters('resourceLocation')]",
+      "properties": {},
+      "dependsOn": [
+        "[resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName'))]"
+      ]
+    },
+    {
+      "type": "Microsoft.Chaos/experiments",
+      "apiVersion": "2022-10-01-preview",
+      "name": "[variables('chaosAksExperimentName')]",
+      "location": "[parameters('resourceLocation')]",
+      "tags": "[variables('resourceTags')]",
+      "identity": {
+        "type": "SystemAssigned"
+      },
+      "properties": {
+        "selectors": [
+          {
+            "type": "List",
+            "id": "[variables('chaosAksSelectorId')]",
+            "targets": [
+              {
+                "id": "[extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), 'Microsoft.Chaos/targets', 'Microsoft-AzureKubernetesServiceChaosMesh')]",
+                "type": "ChaosTarget"
+              }
+            ]
+          }
+        ],
+        "startOnCreation": false,
+        "steps": [
+          {
+            "name": "step1",
+            "branches": [
+              {
+                "name": "branch1",
+                "actions": [
+                  {
+                    "name": "urn:csci:microsoft:azureKubernetesServiceChaosMesh:podChaos/2.1",
+                    "type": "continuous",
+                    "selectorId": "[variables('chaosAksSelectorId')]",
+                    "duration": "PT5M",
+                    "parameters": [
+                      {
+                        "key": "jsonSpec",
+                        "value": "{'action':'pod-failure','mode':'all','duration':'3s','selector':{'namespaces':['default'],'labelSelectors':{'app':'contoso-traders-products'}}}"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      "dependsOn": [
+        "[extensionResourceId(resourceId('Microsoft.ContainerService/managedClusters', variables('aksClusterName')), 'Microsoft.Chaos/targets', 'Microsoft-AzureKubernetesServiceChaosMesh')]"
+      ]
+    },
+    {
+      "condition": "[parameters('deployPrivateEndpoints')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "createPrivateDnsZone",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "privateDnsZoneName": "[if(parameters('deployPrivateEndpoints'), createObject('value', join(skip(split(reference(resourceId('Microsoft.App/containerApps', variables('cartsInternalApiAcaName')), '2022-06-01-preview').configuration.ingress.fqdn, '.'), 2), '.')), createObject('value', ''))]",
+          "privateDnsZoneVnetId": "[if(parameters('deployPrivateEndpoints'), createObject('value', resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))), createObject('value', ''))]",
+          "privateDnsZoneVnetLinkName": {
+            "value": "[variables('privateDnsZoneVnetLinkName')]"
+          },
+          "privateDnsZoneARecordName": "[if(parameters('deployPrivateEndpoints'), createObject('value', join(take(split(reference(resourceId('Microsoft.App/containerApps', variables('cartsInternalApiAcaName')), '2022-06-01-preview').configuration.ingress.fqdn, '.'), 2), '.')), createObject('value', ''))]",
+          "privateDnsZoneARecordIp": "[if(parameters('deployPrivateEndpoints'), createObject('value', reference(resourceId('Microsoft.App/managedEnvironments', variables('cartsInternalApiAcaEnvName')), '2022-06-01-preview').staticIp), createObject('value', ''))]",
+          "resourceTags": {
+            "value": "[variables('resourceTags')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "525097147189125011"
+            }
+          },
+          "parameters": {
+            "privateDnsZoneName": {
+              "type": "string"
+            },
+            "privateDnsZoneVnetId": {
+              "type": "string"
+            },
+            "privateDnsZoneVnetLinkName": {
+              "type": "string"
+            },
+            "privateDnsZoneARecordName": {
+              "type": "string"
+            },
+            "privateDnsZoneARecordIp": {
+              "type": "string"
+            },
+            "resourceTags": {
+              "type": "object"
+            }
+          },
+          "resources": [
+            {
+              "type": "Microsoft.Network/privateDnsZones",
+              "apiVersion": "2020-06-01",
+              "name": "[parameters('privateDnsZoneName')]",
+              "location": "global",
+              "tags": "[parameters('resourceTags')]"
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), parameters('privateDnsZoneVnetLinkName'))]",
+              "location": "global",
+              "tags": "[parameters('resourceTags')]",
+              "properties": {
+                "registrationEnabled": true,
+                "virtualNetwork": {
+                  "id": "[parameters('privateDnsZoneVnetId')]"
+                }
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]"
+              ]
+            },
+            {
+              "type": "Microsoft.Network/privateDnsZones/A",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', parameters('privateDnsZoneName'), parameters('privateDnsZoneARecordName'))]",
+              "properties": {
+                "aRecords": [
+                  {
+                    "ipv4Address": "[parameters('privateDnsZoneARecordIp')]"
+                  }
+                ],
+                "ttl": 3600
+              },
+              "dependsOn": [
+                "[resourceId('Microsoft.Network/privateDnsZones', parameters('privateDnsZoneName'))]"
+              ]
+            }
+          ]
+        }
+      },
+      "dependsOn": [
+        "[resourceId('Microsoft.App/containerApps', variables('cartsInternalApiAcaName'))]",
+        "[resourceId('Microsoft.App/managedEnvironments', variables('cartsInternalApiAcaEnvName'))]",
+        "[resourceId('Microsoft.Network/virtualNetworks', variables('vnetName'))]"
+      ]
+    }
+  ],
+  "outputs": {
+    "cartsApiEndpoint": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.App/containerApps', variables('cartsApiAcaName')), '2022-06-01-preview').configuration.ingress.fqdn)]"
+    },
+    "uiFrontDoorEndpoint": {
+      "type": "string",
+      "value": "[format('https://{0}', reference(resourceId('Microsoft.Cdn/profiles/afdEndpoints', variables('frontDoorProfileName'), variables('frontDoorUi2EndpointName')), '2021-06-01').hostName)]"
+    }
+  }
+}
